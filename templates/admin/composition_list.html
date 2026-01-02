@@ -1,0 +1,34 @@
+<!-- templates/admin/composition_list.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4">Композиції</h1>
+    <a class="btn btn-primary" href="{{ url_for('admin.composition_new') }}">Додати композицію</a>
+  </div>
+  <div class="row">
+    {% for c in compositions %}
+      <div class="col-12 col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+          {% if c.image %}
+          <img class="card-img-top img-fluid" src="{{ url_for('static', filename='img/uploads/' ~ c.image) }}" alt="{{ c.title }}">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ c.title }}</h5>
+            <p class="card-text">{{ c.description }}</p>
+            <span class="badge text-bg-{{ 'success' if c.is_active else 'secondary' }}">{{ 'active' if c.is_active else 'inactive' }}</span>
+            <div class="mt-2">
+              <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.composition_edit', comp_id=c.id) }}">Редагувати</a>
+              <form method="post" action="{{ url_for('admin.composition_delete', comp_id=c.id) }}" style="display:inline;">
+                <button class="btn btn-outline-danger btn-sm" type="submit">Видалити</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p>Наразі немає композицій.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+<!-- templates/partials/product_card.html -->
+<div class="col-12 col-md-6 col-lg-4 mb-4">
+  <div class="card h-100">
+    {% set cover = product.images[0] if product.images else None %}
+    {% if cover %}
+      <img src="{{ url_for('static', filename='img/uploads/' ~ (cover.preview_filename or cover.filename)) }}"
+           class="card-img-top img-fluid" alt="{{ product.name }}">
+    {% endif %}
+    <div class="card-body">
+      <h5 class="card-title">{{ product.name }}</h5>
+      <p class="card-text text-muted">{{ product.description[:100] }}{% if product.description and product.description|length > 100 %}...{% endif %}</p>
+      <div class="mb-2">Ціна від: {{ "%.2f"|format(product.price) }}</div>
+      <a href="{{ url_for('public.product_detail', product_id=product.id) }}" class="btn btn-primary">Детальніше</a>
+    </div>
+  </div>
+</div>

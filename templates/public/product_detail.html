@@ -1,0 +1,96 @@
+<!-- templates/public/product_detail.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-12 col-md-6">
+      <div id="carousel{{ product.id }}" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          {% for img in product.images %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+              <img src="{{ url_for('static', filename='img/uploads/' ~ img.filename) }}" class="d-block w-100 img-fluid" alt="{{ img.alt_text or product.name }}">
+            </div>
+          {% endfor %}
+        </div>
+        {% if product.images|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#carousel{{ product.id }}" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carousel{{ product.id }}" data-bs-slide="next">
+          <span class="carousel-control-next-icon"></span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <h1 class="h4">{{ product.name }}</h1>
+      <p class="text-muted">{{ product.description }}</p>
+
+      <div class="mb-2 small text-muted">
+        Віск: {{ product.wax_type }} • Категорія: {{ product.category }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Колір</label>
+        <div class="d-flex gap-2 flex-wrap">
+          {% for c in product.colors %}
+            <input type="radio" class="btn-check" name="color" id="color-{{ c.id }}"
+                   value="{{ c.id }}" {% if c.is_default %}checked{% endif %}>
+            <label class="btn btn-outline-secondary" for="color-{{ c.id }}">
+              <span class="badge rounded-pill me-2" style="background-color: {{ c.color_hex }};">&nbsp;&nbsp;</span>
+              {{ c.color_name }}
+              {% if c.price_modifier and c.price_modifier > 0 %}
+                <span class="small text-muted">(+{{ (c.price_modifier*100)|round(0) }}%)</span>
+              {% endif %}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Кількість</label>
+        <div class="input-group" style="max-width: 200px;">
+          <button class="btn btn-outline-secondary" type="button" id="qty-minus">−</button>
+          <input type="number" class="form-control text-center" id="qty" value="1" min="1">
+          <button class="btn btn-outline-secondary" type="button" id="qty-plus">+</button>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div id="price-display" class="fw-semibold">Ціна: {{ "%.2f"|format(product.price) }}</div>
+      </div>
+
+      <button class="btn btn-primary" id="add-to-cart">Додати в кошик</button>
+    </div>
+  </div>
+</div>
+<script>
+  const qty = document.getElementById('qty');
+  document.getElementById('qty-minus').onclick = () => qty.value = Math.max(1, parseInt(qty.value)-1);
+  document.getElementById('qty-plus').onclick  = () => qty.value = parseInt(qty.value)+1;
+
+  // Оновлення ціни при зміні кольору (+10% якщо не білий)
+  const priceBase = {{ "%.2f"|format(product.price) }};
+  const colorInputs = document.querySelectorAll('input[name="color"]');
+  const priceEl = document.getElementById('price-display');
+
+  function updatePrice() {
+    const selectedId = document.querySelector('input[name="color"]:checked').value;
+    const color = {{ product.colors|tojson }};
+    const found = color.find(c => c.id == selectedId);
+    const modifier = found ? (found.price_modifier || 0) : 0;
+    const price = (priceBase * (1 + modifier)).toFixed(2);
+    priceEl.textContent = `Ціна: ${price}`;
+  }
+  colorInputs.forEach(el => el.addEventListener('change', updatePrice));
+  updatePrice();
+
+  document.getElementById('add-to-cart').onclick = async () => {
+    const colorId = parseInt(document.querySelector('input[name="color"]:checked').value);
+    const payload = { product_id: {{ product.id }}, color_id: colorId, quantity: parseInt(qty.value) };
+    const res = await fetch("/cart/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (res.ok) { window.location.href = "/cart"; }
+  };
+</script>
+{% endblock %}

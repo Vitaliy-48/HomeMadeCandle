@@ -1,0 +1,29 @@
+<!-- templates/admin/product_list.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4">Товари</h1>
+    <a class="btn btn-primary" href="{{ url_for('admin.product_new') }}">Додати товар</a>
+  </div>
+  <div class="row">
+    {% for p in products %}
+      <div class="col-12 col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+          {% set cover = p.images[0] if p.images else None %}
+          {% if cover %}
+          <img class="card-img-top img-fluid" src="{{ url_for('static', filename='img/uploads/' ~ (cover.preview_filename or cover.filename)) }}" alt="{{ p.name }}">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ p.name }}</h5>
+            <p class="card-text small text-muted">{{ p.sku }} • {{ "%.2f"|format(p.price) }}</p>
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.product_edit', product_id=p.id) }}">Редагувати</a>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p>Наразі немає товарів.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

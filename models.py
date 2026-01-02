@@ -1,0 +1,72 @@
+# models.py
+from datetime import datetime
+from flask_login import UserMixin
+from extensions import db
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sku = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
+    wax_type = db.Column(db.String(64))
+    category = db.Column(db.String(64))
+    width = db.Column(db.Float)
+    height = db.Column(db.Float)
+    depth = db.Column(db.Float)
+    weight = db.Column(db.Float)
+    price = db.Column(db.Float, default=0.0)
+    is_active = db.Column(db.Boolean, default=True)
+    colors = db.relationship("Color", backref="product", cascade="all, delete-orphan")
+    images = db.relationship("ProductImage", backref="product",
+                             order_by="ProductImage.sort_order",
+                             cascade="all, delete-orphan")
+
+class Color(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    color_name = db.Column(db.String(64), nullable=False)
+    color_hex = db.Column(db.String(7), nullable=False)  # "#FFFFFF"
+    is_default = db.Column(db.Boolean, default=False)
+    price_modifier = db.Column(db.Float, default=0.0)     # 0.1 = +10% від базової ціни
+
+class ProductImage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)         # оригінал
+    preview_filename = db.Column(db.String(255))                  # прев’ю 200x200
+    alt_text = db.Column(db.String(120))
+    sort_order = db.Column(db.Integer, default=0)
+
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(120))
+    phone = db.Column(db.String(32))
+    contact_method = db.Column(db.String(32))  # "phone", "viber", "telegram"
+    address = db.Column(db.String(255))
+    comment = db.Column(db.Text)
+    total_amount = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(32), default="new")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    items = db.relationship("OrderItem", backref="order", cascade="all, delete-orphan")
+
+class OrderItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("order.id"), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    color_id = db.Column(db.Integer, db.ForeignKey("color.id"), nullable=True)
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Float, default=0.0)
+
+class Composition(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
+    image = db.Column(db.String(255))   # шлях до фото (filename)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)

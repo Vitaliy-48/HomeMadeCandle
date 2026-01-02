@@ -1,0 +1,26 @@
+<!-- templates/admin/order_list.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1 class="h4 mb-3">Замовлення</h1>
+  <div class="list-group">
+    {% for o in orders %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+          <div>
+            <div class="fw-semibold">#{{ o.id }} • {{ o.customer_name }}</div>
+            <div class="small text-muted">{{ o.contact_method }}: {{ o.phone }}</div>
+            <div class="small text-muted">Статус: {{ o.status }}</div>
+          </div>
+          <div class="text-end">
+            <div>Сума: {{ "%.2f"|format(o.total_amount) }}</div>
+            <div class="small text-muted">{{ o.created_at }}</div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p>Поки немає замовлень.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+<!-- templates/public/compositions.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1 class="h4 mb-3">Композиції</h1>
+  <p class="text-muted">Надихайся прикладами: букети, подарункові набори і більше.</p>
+  <div class="row">
+    {% for comp in compositions %}
+      <div class="col-12 col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+          {% if comp.image %}
+          <img src="{{ url_for('static', filename='img/uploads/' ~ comp.image) }}" class="card-img-top img-fluid" alt="{{ comp.title }}">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ comp.title }}</h5>
+            <p class="card-text">{{ comp.description }}</p>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p>Наразі немає композицій.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

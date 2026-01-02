@@ -1,0 +1,104 @@
+# blueprints/shop/routes.py
+from flask import render_template, request, redirect, url_for, jsonify
+from extensions import db
+from models import Product, Color, Order, OrderItem
+from services.cart import CartService
+from . import bp
+
+def price_with_color(product, color):
+    modifier = color.price_modifier if color else 0.0
+    return round(product.price * (1 + modifier), 2)
+
+@bp.route("/cart")
+def cart():
+    cart = CartService.get()
+    items = []
+    total = 0.0
+    for i, it in enumerate(cart):
+        product = Product.query.get(it["product_id"])
+        if not product:
+            continue
+        color = Color.query.get(it.get("color_id")) if it.get("color_id") else None
+        price = it["unit_price"] or price_with_color(product, color)
+        subtotal = price * it["quantity"]
+        total += subtotal
+        cover = product.images[0] if product.images else None
+        items.append({
+            "index": i,
+            "product": product,
+            "color": color,
+            "quantity": it["quantity"],
+            "unit_price": price,
+            "subtotal": subtotal,
+            "cover": cover
+        })
+    return render_template("shop/cart.html", items=items, total=total)
+
+@bp.route("/cart/add", methods=["POST"])
+def cart_add():
+    data = request.get_json()
+    product = Product.query.get_or_404(data["product_id"])
+    color_id = data.get("color_id")
+    color = Color.query.get(color_id) if color_id else None
+    qty = max(1, int(data.get("quantity", 1)))
+    price = price_with_color(product, color)
+    CartService.add(product.id, color.id if color else None, qty, price)
+    return jsonify({"ok": True})
+
+@bp.route("/cart/update/<int:index>", methods=["POST"])
+def cart_update(index):
+    qty = request.get_json().get("quantity", 1)
+    CartService.update_quantity(index, qty)
+    return jsonify({"ok": True})
+
+@bp.route("/cart/remove/<int:index>", methods=["POST"])
+def cart_remove(index):
+    CartService.remove(index)
+    return jsonify({"ok": True})
+
+@bp.route("/checkout", methods=["GET", "POST"])
+def checkout():
+    if request.method == "POST":
+        form = request.form
+        cart = CartService.get()
+        if not cart:
+            return redirect(url_for("shop.cart"))
+
+        order = Order(
+            customer_name=form.get("name"),
+            phone=form.get("phone"),
+            contact_method=form.get("contact_method"),
+            address=form.get("address"),
+            comment=form.get("comment"),
+            status="new",
+        )
+        db.session.add(order)
+        db.session.flush()
+
+        total = 0.0
+        for it in cart:
+            product = Product.query.get(it["product_id"])
+            color = Color.query.get(it.get("color_id")) if it.get("color_id") else None
+            if not product:
+                continue
+            price = it["unit_price"]
+            db.session.add(OrderItem(
+                order_id=order.id,
+                product_id=product.id,
+                color_id=color.id if color else None,
+                quantity=it["quantity"],
+                unit_price=price
+            ))
+            total += price * it["quantity"]
+
+        order.total_amount = total
+        db.session.commit()
+        CartService.clear()
+        return redirect(url_for("shop.order_success", order_id=order.id))
+
+    return render_template("shop/checkout.html")
+
+@bp.route("/order/success/<int:order_id>")
+def order_success(order_id):
+    order = Order.query.get_or_404(order_id)
+    return render_template("shop/order_success.html", order=order)

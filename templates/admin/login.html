@@ -1,0 +1,18 @@
+<!-- templates/admin/login.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 460px;">
+  <h1 class="h4 mb-3">Вхід до адмінки</h1>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Пароль</label>
+      <input type="password" name="password" class="form-control" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Увійти</button>
+  </form>
+</div>
+{% endblock %}
