@@ -8,6 +8,11 @@ from models import Product, Color, ProductImage, Order, User, Composition
 from services.images import save_image
 from . import bp
 
+@bp.route("/")
+@login_required
+def admin_index():
+  return render_template("admin/index.html")
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))

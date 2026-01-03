@@ -29,6 +29,15 @@ class Color(db.Model):
     is_default = db.Column(db.Boolean, default=False)
     price_modifier = db.Column(db.Float, default=0.0)     # 0.1 = +10% від базової ціни
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "color_name": self.color_name,
+            "color_hex": self.color_hex,
+            "is_default": self.is_default,
+            "price_modifier": self.price_modifier,
+        }
+
 class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
