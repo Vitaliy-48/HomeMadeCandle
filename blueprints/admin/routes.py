@@ -8,15 +8,18 @@ from models import Product, Color, ProductImage, Order, User, Composition
 from services.images import save_image
 from . import bp
 
+# Головна сторінка адмінки
 @bp.route("/")
 @login_required
 def admin_index():
   return render_template("admin/index.html")
 
+# Завантаження користувача для Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Авторизація (Login)
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -25,22 +28,25 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            return redirect(url_for("admin.product_list"))
+            return redirect(url_for("admin.admin_index"))
         flash("Невірний логін або пароль")
     return render_template("admin/login.html")
 
+# Вихід із системи (Logout)
 @bp.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for("admin.login"))
 
+# Список товарів
 @bp.route("/products")
 @login_required
 def product_list():
     products = Product.query.order_by(Product.name).all()
     return render_template("admin/product_list.html", products=products)
 
+# Створення нового товару
 @bp.route("/products/new", methods=["GET", "POST"])
 @login_required
 def product_new():
@@ -67,6 +73,7 @@ def product_new():
         return redirect(url_for("admin.product_edit", product_id=p.id))
     return render_template("admin/product_form.html", product=None, colors=[], images=[])
 
+# Редагування товару
 @bp.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
 @login_required
 def product_edit(product_id):
@@ -89,6 +96,7 @@ def product_edit(product_id):
     images = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order).all()
     return render_template("admin/product_form.html", product=product, colors=colors, images=images)
 
+# Додавання кольору до товару
 @bp.route("/products/<int:product_id>/colors/add", methods=["POST"])
 @login_required
 def color_add(product_id):
@@ -106,6 +114,7 @@ def color_add(product_id):
     db.session.add(c); db.session.commit()
     return redirect(url_for("admin.product_edit", product_id=product_id))
 
+# Видалення кольору
 @bp.route("/colors/<int:color_id>/delete", methods=["POST"])
 @login_required
 def color_delete(color_id):
@@ -114,6 +123,7 @@ def color_delete(color_id):
     db.session.delete(c); db.session.commit()
     return redirect(url_for("admin.product_edit", product_id=pid))
 
+# Додавання зображення до товару
 @bp.route("/products/<int:product_id>/images/add", methods=["POST"])
 @login_required
 def image_add(product_id):
@@ -132,6 +142,7 @@ def image_add(product_id):
     db.session.add(img); db.session.commit()
     return redirect(url_for("admin.product_edit", product_id=product_id))
 
+# Видалення зображення
 @bp.route("/images/<int:image_id>/delete", methods=["POST"])
 @login_required
 def image_delete(image_id):
@@ -140,6 +151,7 @@ def image_delete(image_id):
     db.session.delete(img); db.session.commit()
     return redirect(url_for("admin.product_edit", product_id=pid))
 
+# Список замовлень
 @bp.route("/orders")
 @login_required
 def order_list():

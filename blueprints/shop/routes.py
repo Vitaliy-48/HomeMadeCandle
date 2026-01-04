@@ -5,10 +5,13 @@ from models import Product, Color, Order, OrderItem
 from services.cart import CartService
 from . import bp
 
+# Допоміжна функція для ціни з урахуванням кольору
 def price_with_color(product, color):
+    # Якщо колір має ціновий модифікатор, додаємо його до базової ціни
     modifier = color.price_modifier if color else 0.0
     return round(product.price * (1 + modifier), 2)
 
+# Сторінка кошика
 @bp.route("/cart")
 def cart():
     cart = CartService.get()
@@ -34,6 +37,7 @@ def cart():
         })
     return render_template("shop/cart.html", items=items, total=total)
 
+# Додавання товару до кошика
 @bp.route("/cart/add", methods=["POST"])
 def cart_add():
     data = request.get_json()
@@ -45,12 +49,14 @@ def cart_add():
     CartService.add(product.id, color.id if color else None, qty, price)
     return jsonify({"ok": True})
 
+# Оновлення кількості товару в кошику
 @bp.route("/cart/update/<int:index>", methods=["POST"])
 def cart_update(index):
     qty = request.get_json().get("quantity", 1)
     CartService.update_quantity(index, qty)
     return jsonify({"ok": True})
 
+# Видалення товару з кошика
 @bp.route("/cart/remove/<int:index>", methods=["POST"])
 def cart_remove(index):
     CartService.remove(index)
@@ -62,8 +68,10 @@ def checkout():
         form = request.form
         cart = CartService.get()
         if not cart:
+            # Якщо кошик порожній — повертаємо на сторінку кошика
             return redirect(url_for("shop.cart"))
 
+        # Створюємо нове замовлення
         order = Order(
             customer_name=form.get("name"),
             phone=form.get("phone"),
@@ -75,6 +83,7 @@ def checkout():
         db.session.add(order)
         db.session.flush()
 
+        # Додаємо товари до замовлення
         total = 0.0
         for it in cart:
             product = Product.query.get(it["product_id"])
@@ -91,6 +100,7 @@ def checkout():
             ))
             total += price * it["quantity"]
 
+        # Записуємо загальну суму замовлення
         order.total_amount = total
         db.session.commit()
         CartService.clear()
@@ -98,6 +108,7 @@ def checkout():
 
     return render_template("shop/checkout.html")
 
+# Сторінка успішного замовлення
 @bp.route("/order/success/<int:order_id>")
 def order_success(order_id):
     order = Order.query.get_or_404(order_id)

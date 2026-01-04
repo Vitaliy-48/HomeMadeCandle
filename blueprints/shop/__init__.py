@@ -1,9 +1,8 @@
 # blueprints/shop/__init__.py
 from flask import Blueprint
 
-bp = Blueprint(
-    "shop",
-    __name__,
-    template_folder="templates"
-)
+# Створюємо блупринт "shop"
+bp = Blueprint("shop", __name__, template_folder="templates")
+
+# Імпортуємо маршрути (routes.py), щоб вони зареєструвалися у Flask
 from . import routes
