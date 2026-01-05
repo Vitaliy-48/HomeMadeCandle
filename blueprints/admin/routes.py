@@ -46,7 +46,7 @@ def product_list():
     products = Product.query.order_by(Product.name).all()
     return render_template("admin/product_list.html", products=products)
 
-# Створення нового товару
+'''# Створення нового товару
 @bp.route("/products/new", methods=["GET", "POST"])
 @login_required
 def product_new():
@@ -150,6 +150,75 @@ def image_delete(image_id):
     pid = img.product_id
     db.session.delete(img); db.session.commit()
     return redirect(url_for("admin.product_edit", product_id=pid))
+'''
+
+@bp.route("/products/edit", methods=["GET", "POST"])
+@bp.route("/products/edit/<int:product_id>", methods=["GET", "POST"])
+@login_required
+def product_edit(product_id=None):
+    product = None
+    colors = []
+    images = []
+
+    if product_id:
+        product = Product.query.get_or_404(product_id)
+        colors = Color.query.filter_by(product_id=product.id).all()
+        images = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order).all()
+
+    if request.method == "POST":
+        if not product:  # створення нового товару
+            product = Product(
+                sku=request.form["sku"],
+                name=request.form["name"],
+                description=request.form.get("description"),
+                wax_type=request.form.get("wax_type"),
+                category=request.form.get("category"),
+                width=float(request.form.get("width") or 0),
+                height=float(request.form.get("height") or 0),
+                depth=float(request.form.get("depth") or 0),
+                weight=float(request.form.get("weight") or 0),
+                price=float(request.form.get("price") or 0),
+                is_active="is_active" in request.form
+            )
+            db.session.add(product)
+            db.session.flush()  # отримуємо product.id
+
+        else:  # редагування існуючого
+            product.sku = request.form.get("sku", product.sku)
+            product.name = request.form.get("name", product.name)
+            product.description = request.form.get("description", product.description)
+            product.wax_type = request.form.get("wax_type", product.wax_type)
+            product.category = request.form.get("category", product.category)
+            product.width = float(request.form.get("width") or product.width or 0)
+            product.height = float(request.form.get("height") or product.height or 0)
+            product.depth = float(request.form.get("depth") or product.depth or 0)
+            product.weight = float(request.form.get("weight") or product.weight or 0)
+            product.price = float(request.form.get("price") or product.price or 0)
+            product.is_active = "is_active" in request.form
+
+        # додаємо кольори (якщо передані)
+        color_names = request.form.getlist("color_name")
+        color_hexes = request.form.getlist("color_hex")
+        for name, hex in zip(color_names, color_hexes):
+            if name and hex:
+                c = Color(product_id=product.id, color_name=name, color_hex=hex)
+                db.session.add(c)
+
+        # додаємо фото (якщо передані)
+        files = request.files.getlist("images")
+        for file in files:
+            if file and file.filename:
+                filename, preview = save_image(file)
+                img = ProductImage(product_id=product.id, filename=filename, preview_filename=preview)
+                db.session.add(img)
+
+        db.session.commit()
+        flash("Товар збережено разом із кольорами та фото")
+
+        colors = Color.query.filter_by(product_id=product.id).all()
+        images = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order).all()
+
+    return render_template("admin/product_form.html", product=product, colors=colors, images=images)
 
 # Список замовлень
 @bp.route("/orders")
