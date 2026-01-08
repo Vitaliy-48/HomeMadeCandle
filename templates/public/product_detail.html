@@ -30,13 +30,20 @@
       <div class="mb-2 small text-muted">
         Віск: {{ product.wax_type }} • Категорія: {{ product.category }}
       </div>
+      <div class="mb-2 small text-muted">
+        Довжина: {{ product.height|int }} мм • Ширина: {{ product.width|int }} мм • Висота: {{ product.depth|int }} мм
+      </div>
+      <div class="mb-2 small text-muted">
+        Вага: {{ product.weight|int }} г
+      </div>
+
 
       <div class="mb-3">
         <label class="form-label">Колір</label>
         <div class="d-flex gap-2 flex-wrap">
           {% for c in product.colors %}
             <input type="radio" class="btn-check" name="color" id="color-{{ c.id }}"
-                   value="{{ c.id }}" {% if c.is_default %}checked{% endif %}>
+                   value="{{ c.id }}" {% if loop.first %}checked{% endif %}>
             <label class="btn btn-outline-secondary" for="color-{{ c.id }}">
               <span class="badge rounded-pill me-2" style="background-color: {{ c.color_hex }};">&nbsp;&nbsp;</span>
               {{ c.color_name }}
@@ -58,7 +65,7 @@
       </div>
 
       <div class="mb-3">
-        <div id="price-display" class="fw-semibold">Ціна: {{ "%.2f"|format(product.price) }}</div>
+        <div id="price-display" class="fw-semibold">Ціна: {{ product.price|int }} грн.</div>
       </div>
 
       <button class="btn btn-primary" id="add-to-cart">Додати в кошик</button>
@@ -71,7 +78,7 @@
   document.getElementById('qty-plus').onclick  = () => qty.value = parseInt(qty.value)+1;
 
   // Оновлення ціни при зміні кольору (+10% якщо не білий)
-  const priceBase = {{ "%.2f"|format(product.price) }};
+  const priceBase = {{ product.price|int }};
   const colorInputs = document.querySelectorAll('input[name="color"]');
   const priceEl = document.getElementById('price-display');
 
@@ -80,7 +87,7 @@
     const color = {{ colors|tojson }};
     const found = color.find(c => c.id == selectedId);
     const modifier = found ? (found.price_modifier || 0) : 0;
-    const price = (priceBase * (1 + modifier)).toFixed(2);
+    const price = (priceBase * (1 + modifier));
     priceEl.textContent = `Ціна: ${price}`;
   }
   colorInputs.forEach(el => el.addEventListener('change', updatePrice));

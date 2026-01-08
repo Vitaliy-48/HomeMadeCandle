@@ -1,4 +1,5 @@
 # blueprints/admin/routes.py
+import os
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -46,179 +47,126 @@ def product_list():
     products = Product.query.order_by(Product.name).all()
     return render_template("admin/product_list.html", products=products)
 
-'''# Створення нового товару
-@bp.route("/products/new", methods=["GET", "POST"])
-@login_required
-def product_new():
-    if request.method == "POST":
-        p = Product(
-            sku=request.form["sku"],
-            name=request.form["name"],
-            description=request.form.get("description"),
-            wax_type=request.form.get("wax_type"),
-            category=request.form.get("category"),
-            width=float(request.form.get("width") or 0),
-            height=float(request.form.get("height") or 0),
-            depth=float(request.form.get("depth") or 0),
-            weight=float(request.form.get("weight") or 0),
-            price=float(request.form.get("price") or 0),
-            is_active=True
-        )
-        db.session.add(p); db.session.flush()
-
-        # Автоматичний білий колір за замовчуванням, якщо кольори не додані вручну
-        default_white = Color(product_id=p.id, color_name="Білий", color_hex="#FFFFFF", is_default=True, price_modifier=0.0)
-        db.session.add(default_white)
-        db.session.commit()
-        return redirect(url_for("admin.product_edit", product_id=p.id))
-    return render_template("admin/product_form.html", product=None, colors=[], images=[])
-
-# Редагування товару
-@bp.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
-@login_required
-def product_edit(product_id):
-    product = Product.query.get_or_404(product_id)
-    if request.method == "POST":
-        product.sku = request.form.get("sku", product.sku)
-        product.name = request.form.get("name", product.name)
-        product.description = request.form.get("description", product.description)
-        product.wax_type = request.form.get("wax_type", product.wax_type)
-        product.category = request.form.get("category", product.category)
-        product.width = float(request.form.get("width") or product.width or 0)
-        product.height = float(request.form.get("height") or product.height or 0)
-        product.depth = float(request.form.get("depth") or product.depth or 0)
-        product.weight = float(request.form.get("weight") or product.weight or 0)
-        product.price = float(request.form.get("price") or product.price or 0)
-        product.is_active = bool(request.form.get("is_active"))
-        db.session.commit()
-        flash("Збережено")
-    colors = Color.query.filter_by(product_id=product.id).all()
-    images = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order).all()
-    return render_template("admin/product_form.html", product=product, colors=colors, images=images)
-
-# Додавання кольору до товару
-@bp.route("/products/<int:product_id>/colors/add", methods=["POST"])
-@login_required
-def color_add(product_id):
-    is_default = bool(request.form.get("is_default"))
-    price_modifier = float(request.form.get("price_modifier") or 0.0)
-    if is_default:
-        Color.query.filter_by(product_id=product_id, is_default=True).update({"is_default": False})
-    c = Color(
-        product_id=product_id,
-        color_name=request.form["color_name"],
-        color_hex=request.form["color_hex"],
-        is_default=is_default,
-        price_modifier=price_modifier
-    )
-    db.session.add(c); db.session.commit()
-    return redirect(url_for("admin.product_edit", product_id=product_id))
-
-# Видалення кольору
-@bp.route("/colors/<int:color_id>/delete", methods=["POST"])
-@login_required
-def color_delete(color_id):
-    c = Color.query.get_or_404(color_id)
-    pid = c.product_id
-    db.session.delete(c); db.session.commit()
-    return redirect(url_for("admin.product_edit", product_id=pid))
-
-# Додавання зображення до товару
-@bp.route("/products/<int:product_id>/images/add", methods=["POST"])
-@login_required
-def image_add(product_id):
-    file: FileStorage = request.files.get("image")
-    alt = request.form.get("alt_text")
-    sort_order = int(request.form.get("sort_order") or 0)
-    if not file or not file.filename:
-        flash("Файл зображення не надано")
-        return redirect(url_for("admin.product_edit", product_id=product_id))
-    try:
-        filename, preview = save_image(file)
-    except Exception as e:
-        flash(f"Помилка завантаження: {e}")
-        return redirect(url_for("admin.product_edit", product_id=product_id))
-    img = ProductImage(product_id=product_id, filename=filename, preview_filename=preview, alt_text=alt, sort_order=sort_order)
-    db.session.add(img); db.session.commit()
-    return redirect(url_for("admin.product_edit", product_id=product_id))
-
-# Видалення зображення
-@bp.route("/images/<int:image_id>/delete", methods=["POST"])
-@login_required
-def image_delete(image_id):
-    img = ProductImage.query.get_or_404(image_id)
-    pid = img.product_id
-    db.session.delete(img); db.session.commit()
-    return redirect(url_for("admin.product_edit", product_id=pid))
-'''
-
 @bp.route("/products/edit", methods=["GET", "POST"])
 @bp.route("/products/edit/<int:product_id>", methods=["GET", "POST"])
 @login_required
 def product_edit(product_id=None):
-    product = None
-    colors = []
-    images = []
-
-    if product_id:
-        product = Product.query.get_or_404(product_id)
-        colors = Color.query.filter_by(product_id=product.id).all()
-        images = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order).all()
+    product = Product.query.get(product_id) if product_id else None
 
     if request.method == "POST":
-        if not product:  # створення нового товару
-            product = Product(
-                sku=request.form["sku"],
-                name=request.form["name"],
-                description=request.form.get("description"),
-                wax_type=request.form.get("wax_type"),
-                category=request.form.get("category"),
-                width=float(request.form.get("width") or 0),
-                height=float(request.form.get("height") or 0),
-                depth=float(request.form.get("depth") or 0),
-                weight=float(request.form.get("weight") or 0),
-                price=float(request.form.get("price") or 0),
-                is_active="is_active" in request.form
-            )
+        if not product:
+            product = Product()
             db.session.add(product)
-            db.session.flush()  # отримуємо product.id
 
-        else:  # редагування існуючого
-            product.sku = request.form.get("sku", product.sku)
-            product.name = request.form.get("name", product.name)
-            product.description = request.form.get("description", product.description)
-            product.wax_type = request.form.get("wax_type", product.wax_type)
-            product.category = request.form.get("category", product.category)
-            product.width = float(request.form.get("width") or product.width or 0)
-            product.height = float(request.form.get("height") or product.height or 0)
-            product.depth = float(request.form.get("depth") or product.depth or 0)
-            product.weight = float(request.form.get("weight") or product.weight or 0)
-            product.price = float(request.form.get("price") or product.price or 0)
-            product.is_active = "is_active" in request.form
 
-        # додаємо кольори (якщо передані)
-        color_names = request.form.getlist("color_name")
-        color_hexes = request.form.getlist("color_hex")
-        for name, hex in zip(color_names, color_hexes):
-            if name and hex:
-                c = Color(product_id=product.id, color_name=name, color_hex=hex)
-                db.session.add(c)
+        # 1. Основні дані продукту
+        product.sku = request.form.get("sku")
+        product.name = request.form.get("name")
+        product.description = request.form.get("description")
+        product.wax_type = request.form.get("wax_type")
+        product.category = request.form.get("category")
+        product.price = int(request.form.get("price") or 0)
+        product.width = int(request.form.get("width") or 0)
+        product.height = int(request.form.get("height") or 0)
+        product.depth = int(request.form.get("depth") or 0)
+        product.weight = int(request.form.get("weight") or 0)
+        product.is_active = "is_active" in request.form
 
-        # додаємо фото (якщо передані)
+        db.session.flush() # Щоб отримати ID нового продукту
+
+        # 2. Обробка кольорів (списки з форми)
+        c_ids = request.form.getlist("color_id[]")
+        c_names = request.form.getlist("color_name[]")
+        c_hexes = request.form.getlist("color_hex[]")
+
+        for c_id, name, hex_val in zip(c_ids, c_names, c_hexes):
+            if not name.strip(): continue # пропускаємо порожні імена
+
+            if c_id == "new":
+                new_color = Color(product_id=product.id, color_name=name, color_hex=hex_val)
+                db.session.add(new_color)
+            else:
+                existing_color = Color.query.get(int(c_id))
+                if existing_color:
+                    existing_color.color_name = name
+                    existing_color.color_hex = hex_val
+
+        # 3. Обробка зображень (множинне завантаження)
         files = request.files.getlist("images")
         for file in files:
             if file and file.filename:
-                filename, preview = save_image(file)
-                img = ProductImage(product_id=product.id, filename=filename, preview_filename=preview)
-                db.session.add(img)
+                try:
+                    filename, preview = save_image(file)
+                    img = ProductImage(product_id=product.id, filename=filename, preview_filename=preview)
+                    db.session.add(img)
+                except Exception as e:
+                    flash(f"Помилка завантаження фото: {e}")
 
         db.session.commit()
-        flash("Товар збережено разом із кольорами та фото")
+        flash("Дані збережено!")
+        return redirect(url_for("admin.product_edit", product_id=product.id))
 
-        colors = Color.query.filter_by(product_id=product.id).all()
-        images = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order).all()
-
+    # Для відображення сторінки (GET)
+    colors = Color.query.filter_by(product_id=product.id).all() if product else []
+    images = ProductImage.query.filter_by(product_id=product.id).all() if product else []
     return render_template("admin/product_form.html", product=product, colors=colors, images=images)
+
+# API для швидкого видалення елементів (викликається через JS)
+@bp.route("/colors/<int:color_id>/delete", methods=["POST"])
+@login_required
+def color_delete(color_id):
+    c = Color.query.get_or_404(color_id)
+    db.session.delete(c); db.session.commit()
+    return {"status": "success"}
+
+@bp.route("/images/<int:image_id>/delete", methods=["POST"])
+@login_required
+def image_delete(image_id):
+    img = ProductImage.query.get_or_404(image_id)
+    # шлях до файлу
+    upload_folder = os.path.join(current_app.static_folder, "img/uploads")
+    file_path = os.path.join(upload_folder, img.filename)
+    preview_path = os.path.join(upload_folder, img.preview_filename)
+
+    # пробуємо видалити основний файл
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # пробуємо видалити прев’ю
+    if os.path.exists(preview_path):
+        os.remove(preview_path)
+
+    # видаляємо запис з БД
+
+    db.session.delete(img); db.session.commit()
+    return {"status": "success"}
+
+# Видалення продукту
+@bp.route("/products/<int:product_id>/delete", methods=["POST"])
+@login_required
+def product_delete(product_id):
+    product = Product.query.get_or_404(product_id)
+
+    # Видаляємо пов’язані зображення з диску
+    upload_folder = os.path.join(current_app.static_folder, "img/uploads")
+    for img in ProductImage.query.filter_by(product_id=product.id).all():
+        file_path = os.path.join(upload_folder, img.filename)
+        preview_path = os.path.join(upload_folder, img.preview_filename)
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        if os.path.exists(preview_path):
+            os.remove(preview_path)
+
+        db.session.delete(img)
+
+    # Видаляємо пов’язані кольори
+    Color.query.filter_by(product_id=product.id).delete()
+
+    db.session.delete(product)
+    db.session.commit()
+    flash("Продукт успішно видалено!")
+    return redirect(url_for("admin.product_list"))
 
 # Список замовлень
 @bp.route("/orders")

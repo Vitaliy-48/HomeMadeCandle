@@ -1,15 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h1 class="h4 mb-3">{{ 'Створення товару' if not product else 'Редагування товару' }}</h1>
+{% macro back_button() %}
+  <div class="col-12 mt-2 d-flex justify-content-start">
+    <a href="{{ url_for('admin.product_list') }}" class="btn btn-secondary">
+    Повернутися до списку товарів
+    </a>
+  </div>
+{% endmacro %}
 
-  <form method="post" enctype="multipart/form-data" class="row g-3">
-    <!-- Основні дані товару -->
-    <div class="col-12 col-md-4">
+
+<div class="container py-4">
+  {{ back_button() }}
+
+  <h1 class="h4 mb-4">{{ 'Створення товару' if not product else 'Редагування товару' }}</h1>
+
+  <form method="post"
+        action="{{ url_for('admin.product_edit', product_id=product.id if product else None) }}"
+        enctype="multipart/form-data"
+        class="row g-3">
+
+    <!-- Поля товару -->
+    <div class="col-md-4">
       <label class="form-label">SKU</label>
       <input name="sku" class="form-control" value="{{ product.sku if product else '' }}" required>
     </div>
-    <div class="col-12 col-md-8">
+    <div class="col-md-8">
       <label class="form-label">Назва</label>
       <input name="name" class="form-control" value="{{ product.name if product else '' }}" required>
     </div>
@@ -17,113 +32,141 @@
       <label class="form-label">Опис</label>
       <textarea name="description" class="form-control" rows="3">{{ product.description if product else '' }}</textarea>
     </div>
-    <div class="col-12 col-md-4">
-      <label class="form-label">Віск</label>
+    <div class="col-md-4">
+      <label class="form-label">Ціна</label>
+      <input name="price" type="number" step="0.01" class="form-control" value="{{ product.price|int if product else '0' }}">
+    </div>
+
+    <!-- Додаткові характеристики -->
+    <hr class="my-4">
+    <h5>Характеристики свічки</h5>
+
+    <div class="col-md-4">
+      <label class="form-label">Тип воску</label>
       <input name="wax_type" class="form-control" value="{{ product.wax_type if product else '' }}">
     </div>
-    <div class="col-12 col-md-4">
+
+    <div class="col-md-4">
       <label class="form-label">Категорія</label>
       <input name="category" class="form-control" value="{{ product.category if product else '' }}">
     </div>
-    <div class="col-12 col-md-4">
-      <label class="form-label">Ціна (базова)</label>
-      <input name="price" type="number" step="0.01" class="form-control" value="{{ product.price if product else '0.00' }}">
+
+    <div class="col-md-4">
+      <label class="form-label">Довжина (мм)</label>
+      <input name="height" type="number" step="1" min="0" class="form-control" value="{{ product.height|int if product else '0' }}">
     </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label">Ширина</label>
-      <input name="width" type="number" step="0.1" class="form-control" value="{{ product.width if product else '' }}">
+
+    <div class="col-md-4">
+      <label class="form-label">Ширина (мм)</label>
+      <input name="width" type="number" step="1" min="0" class="form-control" value="{{ product.width|int if product else '0' }}">
     </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label">Висота</label>
-      <input name="height" type="number" step="0.1" class="form-control" value="{{ product.height if product else '' }}">
+
+    <div class="col-md-4">
+      <label class="form-label">Висота (мм)</label>
+      <input name="depth" type="number" step="1" min="0" class="form-control" value="{{ product.depth|int if product else '0' }}">
     </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label">Глибина</label>
-      <input name="depth" type="number" step="0.1" class="form-control" value="{{ product.depth if product else '' }}">
-    </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label">Вага</label>
-      <input name="weight" type="number" step="0.1" class="form-control" value="{{ product.weight if product else '' }}">
-    </div>
-    <div class="col-12">
-      <div class="form-check mt-2">
-        <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
-               {% if product and product.is_active %}checked{% endif %}>
-        <label class="form-check-label" for="is_active">Активний товар</label>
-      </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Вага (г)</label>
+      <input name="weight" type="number" step="1" min="0" class="form-control" value="{{ product.weight|int if product else '0' }}">
     </div>
 
     <!-- Кольори -->
     <hr class="my-4">
-    <h2 class="h5 mb-3">Кольори</h2>
+    <h5>Кольори</h5>
     <div id="color-fields">
+      {% for color in colors %}
       <div class="row g-2 mb-2 color-row">
-        <div class="col-12 col-md-4">
-          <input name="color_name" class="form-control" placeholder="Назва кольору">
+        <input type="hidden" name="color_id[]" value="{{ color.id }}">
+        <div class="col-5">
+          <input name="color_name[]" class="form-control form-control-sm" value="{{ color.color_name }}">
         </div>
-        <div class="col-12 col-md-4">
-          <input name="color_hex" class="form-control" placeholder="#FFFFFF">
+        <div class="col-4">
+          <input name="color_hex[]" type="color" class="form-control form-control-color w-100" value="{{ color.color_hex }}">
+        </div>
+        <div class="col-3">
+          <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="apiDelete('color', '{{ color.id }}', this)">Видалити</button>
         </div>
       </div>
-    </div>
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addColor()">+ Додати колір</button>
-    {% if colors %}
-      <ul class="list-group my-3">
-        {% for c in colors %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <span class="badge me-2" style="background:{{ c.color_hex }};">&nbsp;&nbsp;</span>
-              {{ c.color_name }}
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-
-    <!-- Фото -->
-    <hr class="my-4">
-    <h2 class="h5 mb-3">Фото</h2>
-    <div class="row g-2" id="image-fields">
-      <div class="col-12 col-md-6">
-        <input type="file" name="images" class="form-control" accept=".jpg,.jpeg,.png,.gif" multiple>
-      </div>
-    </div>
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addImage()">+ Додати фото</button>
-    <div class="row mt-3">
-      {% for img in images %}
-        <div class="col-6 col-md-3 mb-3 text-center">
-          <img src="{{ url_for('static', filename='img/uploads/' ~ (img.preview_filename or img.filename)) }}"
-               class="img-fluid img-thumbnail" alt="{{ img.alt_text }}">
-        </div>
       {% endfor %}
     </div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addColorRow()">+ Колір</button>
 
-    <!-- Кнопка зберегти -->
-    <div class="col-12 mt-4">
-      <button class="btn btn-primary" type="submit">Зберегти все</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('admin.product_list') }}">Назад</a>
+    <!-- Фотографії -->
+    <hr class="my-4">
+    <h5>Зображення</h5>
+    <div class="row mb-3">
+      {% for img in images %}
+      <div class="col-4 col-md-2 text-center position-relative mb-2">
+        <img src="{{ url_for('static', filename='img/uploads/' + img.preview_filename) }}" class="img-thumbnail">
+        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="apiDelete('image', '{{ img.id }}', this)">×</button>
+      </div>
+      {% endfor %}
     </div>
+    <div class="col-12">
+      <label class="form-label">Додати нові фото (можна вибрати кілька):</label>
+      <input type="file" name="images" class="form-control" accept="image/*" multiple>
+    </div>
+
+
+    <!-- Футер форми -->
+    <div class="col-12 mt-5 p-3 bg-light d-flex flex-column align-items-start rounded">
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" name="is_active" id="active" {% if not product or product.is_active %}checked{% endif %}>
+        <label class="form-check-label" for="active">Товар активний</label>
+      </div>
+      {% with messages = get_flashed_messages() %}
+        <button id="save-btn"
+                type="submit"
+                class="btn {{ 'btn-primary' if messages else 'btn-success' }}">
+            {{ 'Оновлено' if messages else 'Зберегти все' }}
+        </button>
+        {% endwith %}
+
+      </div>
+    {{ back_button() }}
   </form>
 </div>
 
-
 <script>
-function addColor() {
+
+function markDirty() {
+  const saveBtn = document.getElementById("save-btn");
+  if (!saveBtn) return;
+  saveBtn.textContent = "Зберегти все";
+  saveBtn.classList.remove("btn-primary", "btn-danger");
+  saveBtn.classList.add("btn-success");
+}
+
+function addColorRow() {
   const container = document.getElementById("color-fields");
-  const row = document.querySelector(".color-row").cloneNode(true);
-  row.querySelectorAll("input").forEach(input => input.value = "");
-  container.appendChild(row);
+  const div = document.createElement("div");
+  div.className = "row g-2 mb-2 color-row";
+  div.innerHTML = `
+    <input type="hidden" name="color_id[]" value="new">
+    <div class="col-5"><input name="color_name[]" class="form-control form-control-sm" placeholder="Назва"></div>
+    <div class="col-4"><input name="color_hex[]" type="color" class="form-control form-control-color w-100" value="#ffffff"></div>
+    <div class="col-3"><button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="this.closest('.color-row').remove()">Видалити</button></div>
+  `;
+  container.appendChild(div);
+  markDirty();
 }
-function addImage() {
-  const container = document.getElementById("image-fields");
-  const input = document.createElement("input");
-  input.type = "file";
-  input.name = "images";
-  input.className = "form-control mb-2";
-  input.accept = ".jpg,.jpeg,.png,.gif";
-  container.appendChild(input);
+
+async function apiDelete(type, id, btn) {
+  if (confirm('Видалити цей елемент?')) {
+    const url = type === 'color' ? `/admin/colors/${id}/delete` : `/admin/images/${id}/delete`;
+    const res = await fetch(url, { method: 'POST' });
+    if (res.ok) btn.closest('.color-row, .col-4').remove();
+    markDirty();
+  }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("form");
+
+  form.addEventListener("input", markDirty);
+  form.addEventListener("change", markDirty); // для чекбоксів, file input, color input
+});
 
 </script>
-
 {% endblock %}
