@@ -95,24 +95,30 @@
     <!-- Фотографії -->
     <hr class="my-4">
     <h5>Зображення</h5>
-    <div class="row mb-3">
+    <div  id="image-fields" class="row mb-3">
       {% for img in images %}
-      <div class="col-4 col-md-2 text-center position-relative mb-2">
-        <img src="{{ url_for('static', filename='img/uploads/' + img.preview_filename) }}" class="img-thumbnail">
-        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" onclick="apiDelete('image', '{{ img.id }}', this)">×</button>
+      <div class="col-6 col-md-3 mb-3 image-row">
+        <div class="p-2 text-center position-relative" style="width: 120px; aspect-ratio: 1/1; margin: 0 auto;">
+          <input type="hidden" name="image_id[]" value="{{ img.id }}">
+          <img src="{{ url_for('static', filename='img/uploads/' + img.preview_filename) }}"
+               class="img-thumbnail mb-2 w-100 h-100"
+               style="aspect-ratio: 1/1; object-fit: cover; max-width: 120px; margin: 0 auto;">
+          <button type="button"
+                  class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 rounded-circle"
+                  onclick="apiDelete('image', '{{ img.id }}', this)">&times;</button>
+        </div>
       </div>
       {% endfor %}
     </div>
-    <div class="col-12">
-      <label class="form-label">Додати нові фото (можна вибрати кілька):</label>
-      <input type="file" name="images" class="form-control" accept="image/*" multiple>
-    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addImageRow()">+ Додати фото</button>
+
 
 
     <!-- Футер форми -->
     <div class="col-12 mt-5 p-3 bg-light d-flex flex-column align-items-start rounded">
       <div class="form-check form-switch mb-3">
-        <input class="form-check-input" type="checkbox" name="is_active" id="active" {% if not product or product.is_active %}checked{% endif %}>
+        <input class="form-check-input" type="checkbox" name="is_active" id="active"
+               {% if not product or product.is_active %}checked{% endif %}>
         <label class="form-check-label" for="active">Товар активний</label>
       </div>
       {% with messages = get_flashed_messages() %}
@@ -152,12 +158,48 @@ function addColorRow() {
   markDirty();
 }
 
+// Додавання рядка зображення
+function addImageRow() {
+  const container = document.getElementById("image-fields");
+  const div = document.createElement("div");
+  div.className = "col-6 col-md-3 mb-3 image-row";
+  div.innerHTML = `
+    <div class="card p-2 text-center shadow-sm position-relative">
+      <input type="hidden" name="image_id[]" value="new">
+      <img class="img-thumbnail mb-2 d-none w-100" style="aspect-ratio: 1/1; object-fit: cover; max-width: 120px; margin: 0 auto;">
+      <input type="file" name="image_file[]" class="form-control form-control-sm mb-2" accept="image/*" onchange="previewImage(this)">
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="this.closest('.image-row').remove()">Скасувати</button>
+    </div>
+  `;
+  container.appendChild(div);
+  markDirty();
+}
+
+// Попередній перегляд обраного фото
+function previewImage(input) {
+  const file = input.files[0];
+  const imgElement = input.parentElement.querySelector('img');
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imgElement.src = e.target.result;
+      imgElement.classList.remove('d-none');
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+
 async function apiDelete(type, id, btn) {
   if (confirm('Видалити цей елемент?')) {
     const url = type === 'color' ? `/admin/colors/${id}/delete` : `/admin/images/${id}/delete`;
     const res = await fetch(url, { method: 'POST' });
-    if (res.ok) btn.closest('.color-row, .col-4').remove();
-    markDirty();
+    if (res.ok) {
+      // Знаходить найближчий елемент, який має АБО клас .color-row, АБО .image-row
+      const row = btn.closest('.color-row, .image-row');
+      if (row) row.remove();
+      markDirty();
+    }
   }
 }
 

@@ -2,10 +2,13 @@
 import os
 from flask import Flask
 from config import Config
+from dotenv import load_dotenv
 from extensions import db, migrate, login_manager
 from blueprints.public import bp as public_bp
 from blueprints.shop import bp as shop_bp
 from blueprints.admin import bp as admin_bp
+
+load_dotenv()
 
 def create_app():
     # 1. Створення Flask-застосунку

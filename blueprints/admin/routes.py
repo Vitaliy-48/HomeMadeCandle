@@ -92,7 +92,9 @@ def product_edit(product_id=None):
                     existing_color.color_hex = hex_val
 
         # 3. Обробка зображень (множинне завантаження)
-        files = request.files.getlist("images")
+        files = request.files.getlist("image_file[]")
+        print("FILES:", files)
+
         for file in files:
             if file and file.filename:
                 try:
@@ -223,5 +225,21 @@ def composition_edit(comp_id):
 @login_required
 def composition_delete(comp_id):
     comp = Composition.query.get_or_404(comp_id)
+
+    upload_folder = os.path.join(current_app.static_folder, "img/uploads")
+
+    # основне зображення
+    if comp.image:
+        file_path = os.path.join(upload_folder, comp.image)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        preview_name = f"preview_{comp.image}"
+        preview_path = os.path.join(upload_folder, preview_name)
+        if os.path.exists(preview_path):
+            os.remove(preview_path)
+
+    # видалення запису з БД
+
     db.session.delete(comp); db.session.commit()
+    flash("Композицію успішно видалено!")
     return redirect(url_for("admin.composition_list"))

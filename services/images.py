@@ -4,7 +4,7 @@ from PIL import Image
 from werkzeug.utils import secure_filename
 from flask import current_app
 
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -29,7 +29,7 @@ def save_image(file_storage):
     preview_name = f"preview_{unique}"
     preview_path = os.path.join(upload_dir, preview_name)
     with Image.open(original_path) as img:
-        img = img.convert("RGB") if ext in ("jpg", "jpeg") else img
+        img = img.convert("RGB") if ext in ("jpg", "jpeg", "webp") else img
         img.thumbnail((200, 200))
         img.save(preview_path)
 
