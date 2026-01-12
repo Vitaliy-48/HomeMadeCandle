@@ -19,8 +19,7 @@
    - flask shell
    - from extensions import db
    - from models import User
-   - from werkzeug.security import generate_password_hash
-   - u = User(email="admin@example.com", password_hash=generate_password_hash("admin123"))
+   - u = User(email="admin@example.com", password_hash=generate_password_hash("123456"))
    - db.session.add(u); db.session.commit()
 6. Запустити:
    - flask run
@@ -37,7 +36,7 @@
 
 ## Функції
 - Каталог, картка товару з слайдером фото
-- Вибір кольору (білий за замовчуванням, інші +10% через price_modifier)
+- Вибір кольору
 - Кошик з редагуванням кількості
 - Оформлення замовлення (без email, з телефоном і методом зв’язку)
 - Адмінка: логін, товари ( кольори, фото ), замовлення

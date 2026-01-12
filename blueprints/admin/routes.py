@@ -2,8 +2,7 @@
 import os
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, login_user, logout_user
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.datastructures import FileStorage
+from werkzeug.security import check_password_hash
 from extensions import db, login_manager
 from models import Product, Color, ProductImage, Order, User, Composition
 from services.images import save_image
